@@ -9,6 +9,8 @@ import Condidatverification from './pages/Condidatverification';
 import TestList from './pages/TestList';
 import TakeTest from './pages/TakeTest'; 
 import TestIntroduction from './pages/TestIntroduction'; 
+import TestResultsPage from './pages/TestResultsPage';
+
 
 function App() {
   return (
@@ -25,6 +27,7 @@ function App() {
             <Route path="/TestList" element={<TestList />} />
             <Route path="/TakeTest/:id" element={<TakeTest />} />
             <Route path="/TestIntroduction" element={<TestIntroduction />} />
+            <Route path="/TestResultsPage" element={<TestResultsPage />} />
           </Routes>
         </Router>
       </div>

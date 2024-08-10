@@ -26,7 +26,7 @@ const Navbar = () => {
         <nav style={{ alignItems: 'center' }}>
           <Link to="/Login" style={linkStyle('/Login')}>Home</Link>
           <Link to="/TestList" style={linkStyle('/TestList')}>Tests</Link>
-          <Link to="/Results" style={linkStyle('/Results')}>Résultats</Link>
+          <Link to="/TestResultsPage" style={linkStyle('/TestResultsPage')}>Résultats</Link>
           <Link to="/More" style={linkStyle('/More')}>Plus</Link>
         </nav>
         <Button

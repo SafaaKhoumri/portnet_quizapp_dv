@@ -154,7 +154,7 @@ const handleSendTestToCandidate = async () => {
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Navbar/>
       <div style={{ display: 'flex', width: '100%', marginTop: '64px', backgroundColor: '#D9D9D9' }}>
-        <Box sx={{ width: '20%', padding: '3%', backgroundColor: '#232A56', color: '#fff' }}>
+        <Box sx={{ width: '20%', padding: 2, backgroundColor: '#232A56', color: '#fff' }}>
           <Typography variant="h6"sx={{ textDecoration: 'underline', marginBottom: '5%', fontSize: '2em' }}>Tests</Typography>
           <List>
             {tests.map(test => (
@@ -164,8 +164,9 @@ const handleSendTestToCandidate = async () => {
                 onClick={() => handleTestClick(test)}
                 sx={{
                   backgroundColor: selectedTest && selectedTest.id === test.id ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                  borderRadius: '8px',
                   '&:before': {
-                    content: selectedTest && selectedTest.id === test.id ? '"▸"' : '""',
+                    content: selectedTest && selectedTest.id === test.id ? '"▶"' : '""',
                     marginRight: '8px',
                   },
                 }}
