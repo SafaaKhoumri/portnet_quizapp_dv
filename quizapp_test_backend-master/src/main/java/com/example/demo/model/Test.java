@@ -48,11 +48,10 @@ public class Test {
     @JsonIgnore
 
     private List<Condidats> candidates;
-
-    @OneToMany(mappedBy = "test")
-    @JsonManagedReference
     
-
+    @ManyToMany
+    @JoinTable(name = "questions_test", joinColumns = @JoinColumn(name = "test_id"), inverseJoinColumns = @JoinColumn(name = "question_id"))
+    @JsonIgnore
     private List<Question> questions;
 
     // getters and setters

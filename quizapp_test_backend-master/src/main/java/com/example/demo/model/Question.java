@@ -67,4 +67,13 @@ public class Question {
     public void setTest(Test test) {
         this.test = test;
     }
+     // New method to get the correct answer
+    public AnswerChoice getCorrectAnswer() {
+        for (AnswerChoice choice : choices) {
+            if (choice.isCorrect()) {
+                return choice;
+            }
+        }
+        return null; // or throw an exception if you prefer
+    }
 }

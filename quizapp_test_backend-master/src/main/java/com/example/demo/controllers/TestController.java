@@ -60,6 +60,9 @@ public class TestController {
     @Autowired
     private TestService testService;
 
+     @Autowired
+    private ScoreRepository scoreRepository;
+
     @GetMapping("/tests")
     public ResponseEntity<List<Test>> getAllTests() {
         List<Test> tests = testService.getAllTests();
@@ -72,22 +75,53 @@ public class TestController {
         return test.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    @GetMapping("/tests/{id}/candidates")
+ @GetMapping("/tests/{id}/results")
+public ResponseEntity<List<CandidateResult>> getCandidateByTestId(@PathVariable Long id) {
+    List<CandidateResult> results = new ArrayList<>();
+    List<Condidats> candidates = testService.getCandidatesByTestId(id);
+
+    for (Condidats candidate : candidates) {
+        Optional<Score> scoreOpt = scoreRepository.findByTestIdAndCandidatId(id, candidate.getId());
+        int scorePercentage = scoreOpt.map(Score::getScorePercentage).orElse(0);
+        results.add(new CandidateResult(candidate, scorePercentage));
+    }
+
+    return candidates != null ? ResponseEntity.ok(results) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+}
+
+@GetMapping("/tests/{id}/candidates")
     public ResponseEntity<List<Condidats>> getCandidatesByTestId(@PathVariable Long id) {
         List<Condidats> candidates = testService.getCandidatesByTestId(id);
         return candidates != null ? ResponseEntity.ok(candidates) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
-    @GetMapping("/tests/{testId}/questions")
-    public ResponseEntity<List<Question>> getQuestionsByTestId(@PathVariable Long testId) {
-        Optional<Test> testOpt = testService.getTestById(testId);
-        if (!testOpt.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-        Test test = testOpt.get();
-        List<Question> questions = test.getQuestions();
-        return ResponseEntity.ok(questions);
+public static class CandidateResult {
+    private Condidats candidate;
+    private int scorePercentage;
+
+    public CandidateResult(Condidats candidate, int scorePercentage) {
+        this.candidate = candidate;
+        this.scorePercentage = scorePercentage;
     }
+
+    public Condidats getCandidate() {
+        return candidate;
+    }
+
+    public int getScorePercentage() {
+        return scorePercentage;
+    }
+}
+
+
+    
+   @GetMapping("/tests/{id}/questions")
+    public ResponseEntity<List<Question>> getQuestionsByTestId(@PathVariable Long id) {
+        List<Question> questions = testService.getQuestionsByTestId(id);
+        return questions != null ? ResponseEntity.ok(questions) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
+
+ 
 
  @PostMapping("/tests/{testId}/sendToCandidate")
     public ResponseEntity<String> sendTestToCandidate(
@@ -338,7 +372,7 @@ public static class SendTestRequest {
         }
     }
 
-    @PostMapping("/tests/{id}/submit")
+     @PostMapping("/tests/{id}/submit")
     public ResponseEntity<String> submitTest(@PathVariable Long id, @RequestBody List<AnswerRequest> answerRequests) {
         Optional<Test> testOpt = testService.getTestById(id);
         if (!testOpt.isPresent()) {
@@ -346,26 +380,41 @@ public static class SendTestRequest {
         }
 
         Test test = testOpt.get();
-        for (AnswerRequest answerRequest : answerRequests) {
-            Answer answer = new Answer();
-            answer.setTexteReponse(answerRequest.getTexteReponse());
-            answer.setEstCorrecte(answerRequest.isEstCorrecte());
+        int correctAnswers = 0;
+        int totalQuestions = answerRequests.size();
+        logger.info("Candidate ID: {}", answerRequests.get(0).getCandidatId());
+logger.info("Correct answers: {}", correctAnswers);
+logger.info("Total questions: {}", totalQuestions);
 
-            Optional<Question> questionOpt = questionRepository.findById(answerRequest.getQuestionId());
-            if (questionOpt.isPresent()) {
-                answer.setQuestion(questionOpt.get());
-            }
 
-            Optional<Condidats> candidatOpt = candidatsRepository.findById(answerRequest.getCandidatId());
-            if (candidatOpt.isPresent()) {
-                answer.setCandidat(candidatOpt.get());
-            }
+    for (AnswerRequest answerRequest : answerRequests) {
+    Optional<Question> questionOpt = questionRepository.findById(answerRequest.getQuestionId());
+    if (questionOpt.isPresent() && answerRequest.isEstCorrecte()) {
+        correctAnswers++;
+        logger.info("Correct answer found for question ID: {}", answerRequest.getQuestionId());
+    } else {
+        logger.info("Incorrect answer or question not found for question ID: {}", answerRequest.getQuestionId());
+    }
+}
 
-            answerRepository.save(answer);
-        }
+
+       Optional<Condidats> candidatOpt = candidatsRepository.findById(answerRequests.get(0).getCandidatId());
+if (candidatOpt.isPresent()) {
+    Condidats candidat = candidatOpt.get();
+
+    Score score = new Score();
+    score.setCandidat(candidat);
+    score.setTest(test);
+    score.setCorrectAnswers(correctAnswers);
+    score.setTotalQuestions(totalQuestions);
+
+    scoreRepository.save(score); // Save score using the repository
+}
+
 
         return ResponseEntity.ok("Test submitted successfully!");
     }
+
 
     public static class AnswerRequest {
         private Long questionId;

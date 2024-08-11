@@ -2,6 +2,7 @@ package com.example.demo.services;
 
 import com.example.demo.model.Test;
 import com.example.demo.model.Condidats;
+import com.example.demo.model.Question;
 import com.example.demo.repositories.TestRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,11 @@ public class TestService {
     public List<Condidats> getCandidatesByTestId(Long id) {
         Optional<Test> testOpt = getTestById(id);
         return testOpt.map(Test::getCandidates).orElse(null);
+    }
+
+     public List<Question> getQuestionsByTestId(Long id) {
+        Optional<Test> testOpt = getTestById(id);
+        return testOpt.map(Test::getQuestions).orElse(null);
     }
 
     // Vérifier si un test existe par son nom

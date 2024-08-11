@@ -18,13 +18,18 @@ function TestResultsPage() {
       .catch(error => console.error('Error fetching tests:', error));
   }, []);
 
+  useEffect(() => {
+    if (selectedTest) {
+      setLoading(true);
+      axios.get(`http://localhost:8088/api/tests/${selectedTest}/results`)
+        .then(response => setCandidates(response.data))
+        .catch(error => console.error('Error fetching candidates:', error))
+        .finally(() => setLoading(false));
+    }
+  }, [selectedTest]);
+
   const handleTestClick = (testId) => {
     setSelectedTest(testId);
-    setLoading(true);
-    axios.get(`http://localhost:8088/api/tests/${testId}/candidates`)
-      .then(response => setCandidates(response.data))
-      .catch(error => console.error('Error fetching candidates:', error))
-      .finally(() => setLoading(false));
   };
 
   const getScoreColor = (score) => {
@@ -34,7 +39,7 @@ function TestResultsPage() {
   };
 
   const filteredCandidates = candidates.filter(candidate =>
-    candidate.name.toLowerCase().includes(searchTerm.toLowerCase())
+    candidate.candidate.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -86,8 +91,8 @@ function TestResultsPage() {
                 onFocus={() => setSearchBgColor('#fff')} 
                 onBlur={() => setSearchBgColor('#f4f4f4')} 
               />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: '3%', alignItems:'center' }}>
-                {filteredCandidates.map((candidate) => (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: '3%', alignItems: 'center' }}>
+                {filteredCandidates.map(({ candidate, scorePercentage }) => (
                   <Box 
                     key={candidate.id} 
                     sx={{ 
@@ -97,7 +102,7 @@ function TestResultsPage() {
                       boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)', 
                       padding: 2,
                       display: 'flex',
-                      alignItems: 'center',
+                      alignItems: 'center', 
                       justifyContent: 'space-between'
                     }}
                   >
@@ -110,20 +115,21 @@ function TestResultsPage() {
                         width: 60, 
                         height: 60, 
                         borderRadius: '50%', 
+                        backgroundColor: getScoreColor(scorePercentage), 
                         display: 'flex', 
                         alignItems: 'center', 
-                        justifyContent: 'center', 
-                        backgroundColor: getScoreColor(candidate.score) 
+                        justifyContent: 'center' 
                       }}
                     >
-                      <Typography variant="h6" sx={{ color: '#fff' }}>{candidate.score}%</Typography>
+                      <Typography variant="h6" sx={{ color: '#fff' }}>{scorePercentage}%</Typography>
                     </Box>
                   </Box>
                 ))}
               </Box>
             </>
           ) : (
-            <Typography variant="h4" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '64px', color: '#888888' }}>Sélectionnez un test pour voir les résultats</Typography>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '64px', color: '#888888' }}>
+              <Typography variant="h4">Sélectionnez un test pour voir les résultats.</Typography> </div>
           )}
         </Container>
       </div>
