@@ -10,4 +10,6 @@ public interface QuestionRepository extends CrudRepository<Question, Long> {
 
     @Query("SELECT q FROM Question q LEFT JOIN FETCH q.choices WHERE q.competency.id IN :competencyIds")
     List<Question> findQuestionsByCompetencyIds(List<Long> competencyIds);
+
+    List<Question> findAllById(Iterable<Long> ids);
 }

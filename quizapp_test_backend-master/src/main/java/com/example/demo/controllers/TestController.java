@@ -1,5 +1,6 @@
 package com.example.demo.controllers;
 
+import java.util.stream.Collectors;
 import com.example.demo.model.*;
 import com.example.demo.repositories.*;
 import com.example.demo.services.EmailService;
@@ -12,12 +13,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-
 
 @RestController
 @RequestMapping("/api")
@@ -60,7 +64,7 @@ public class TestController {
     @Autowired
     private TestService testService;
 
-     @Autowired
+    @Autowired
     private ScoreRepository scoreRepository;
 
     @GetMapping("/tests")
@@ -75,55 +79,51 @@ public class TestController {
         return test.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
- @GetMapping("/tests/{id}/results")
-public ResponseEntity<List<CandidateResult>> getCandidateByTestId(@PathVariable Long id) {
-    List<CandidateResult> results = new ArrayList<>();
-    List<Condidats> candidates = testService.getCandidatesByTestId(id);
+    @GetMapping("/tests/{id}/results")
+    public ResponseEntity<List<CandidateResult>> getCandidateByTestId(@PathVariable Long id) {
+        List<CandidateResult> results = new ArrayList<>();
+        List<Condidats> candidates = testService.getCandidatesByTestId(id);
 
-    for (Condidats candidate : candidates) {
-        Optional<Score> scoreOpt = scoreRepository.findByTestIdAndCandidatId(id, candidate.getId());
-        int scorePercentage = scoreOpt.map(Score::getScorePercentage).orElse(0);
-        results.add(new CandidateResult(candidate, scorePercentage));
+        for (Condidats candidate : candidates) {
+            Optional<Score> scoreOpt = scoreRepository.findByTestIdAndCandidatId(id, candidate.getId());
+            int scorePercentage = scoreOpt.map(Score::getScorePercentage).orElse(0);
+            results.add(new CandidateResult(candidate, scorePercentage));
+        }
+
+        return candidates != null ? ResponseEntity.ok(results) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
-    return candidates != null ? ResponseEntity.ok(results) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-}
-
-@GetMapping("/tests/{id}/candidates")
+    @GetMapping("/tests/{id}/candidates")
     public ResponseEntity<List<Condidats>> getCandidatesByTestId(@PathVariable Long id) {
         List<Condidats> candidates = testService.getCandidatesByTestId(id);
         return candidates != null ? ResponseEntity.ok(candidates) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
-public static class CandidateResult {
-    private Condidats candidate;
-    private int scorePercentage;
+    public static class CandidateResult {
+        private Condidats candidate;
+        private int scorePercentage;
 
-    public CandidateResult(Condidats candidate, int scorePercentage) {
-        this.candidate = candidate;
-        this.scorePercentage = scorePercentage;
+        public CandidateResult(Condidats candidate, int scorePercentage) {
+            this.candidate = candidate;
+            this.scorePercentage = scorePercentage;
+        }
+
+        public Condidats getCandidate() {
+            return candidate;
+        }
+
+        public int getScorePercentage() {
+            return scorePercentage;
+        }
     }
 
-    public Condidats getCandidate() {
-        return candidate;
-    }
-
-    public int getScorePercentage() {
-        return scorePercentage;
-    }
-}
-
-
-    
-   @GetMapping("/tests/{id}/questions")
+    @GetMapping("/tests/{id}/questions")
     public ResponseEntity<List<Question>> getQuestionsByTestId(@PathVariable Long id) {
         List<Question> questions = testService.getQuestionsByTestId(id);
         return questions != null ? ResponseEntity.ok(questions) : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
- 
-
- @PostMapping("/tests/{testId}/sendToCandidate")
+    @PostMapping("/tests/{testId}/sendToCandidate")
     public ResponseEntity<String> sendTestToCandidate(
             @PathVariable Long testId, @RequestBody SendTestRequest request) {
         try {
@@ -172,7 +172,6 @@ public static class CandidateResult {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send email.");
         }
     }
-
 
     @PostMapping("/createAndSendTest")
     public ResponseEntity<String> createAndSendTest(@RequestBody TestRequest testRequest) {
@@ -275,35 +274,34 @@ public static class CandidateResult {
         }
     }
 
-public static class SendTestRequest {
-    private String candidateEmail;
-    private String candidateName;
-    private Long testId;
+    public static class SendTestRequest {
+        private String candidateEmail;
+        private String candidateName;
+        private Long testId;
 
-    // Getter pour candidateEmail
-    public String getCandidateEmail() {
-        return candidateEmail;
+        // Getter pour candidateEmail
+        public String getCandidateEmail() {
+            return candidateEmail;
+        }
+
+        // Setter pour candidateEmail
+        public void setCandidateEmail(String candidateEmail) {
+            this.candidateEmail = candidateEmail;
+        }
+
+        public String getCandidateName() {
+            return candidateName;
+        }
+
+        public void setCandidateName(String candidateName) {
+            this.candidateName = candidateName;
+        }
+
+        // Setter pour testId
+        public void setTestId(Long testId) {
+            this.testId = testId;
+        }
     }
-
-    // Setter pour candidateEmail
-    public void setCandidateEmail(String candidateEmail) {
-        this.candidateEmail = candidateEmail;
-    }
-
-
-    public String getCandidateName() {
-        return candidateName;
-    }
-
-    public void setCandidateName(String candidateName) {
-        this.candidateName = candidateName;
-    }
-
-    // Setter pour testId
-    public void setTestId(Long testId) {
-        this.testId = testId;
-    }
-}
 
     public static class TestRequest {
         private String testName;
@@ -372,7 +370,7 @@ public static class SendTestRequest {
         }
     }
 
-     @PostMapping("/tests/{id}/submit")
+    @PostMapping("/tests/{id}/submit")
     public ResponseEntity<String> submitTest(@PathVariable Long id, @RequestBody List<AnswerRequest> answerRequests) {
         Optional<Test> testOpt = testService.getTestById(id);
         if (!testOpt.isPresent()) {
@@ -382,39 +380,44 @@ public static class SendTestRequest {
         Test test = testOpt.get();
         int correctAnswers = 0;
         int totalQuestions = answerRequests.size();
-        logger.info("Candidate ID: {}", answerRequests.get(0).getCandidatId());
-logger.info("Correct answers: {}", correctAnswers);
-logger.info("Total questions: {}", totalQuestions);
 
+        Map<Long, Question> questionsMap = questionRepository.findAllById(
+                answerRequests.stream().map(AnswerRequest::getQuestionId).collect(Collectors.toList())).stream()
+                .collect(Collectors.toMap(Question::getId, Function.identity()));
 
-    for (AnswerRequest answerRequest : answerRequests) {
-    Optional<Question> questionOpt = questionRepository.findById(answerRequest.getQuestionId());
-    if (questionOpt.isPresent() && answerRequest.isEstCorrecte()) {
-        correctAnswers++;
-        logger.info("Correct answer found for question ID: {}", answerRequest.getQuestionId());
-    } else {
-        logger.info("Incorrect answer or question not found for question ID: {}", answerRequest.getQuestionId());
-    }
-}
+        Optional<Condidats> candidatOpt = candidatsRepository.findById(answerRequests.get(0).getCandidatId());
+        if (!candidatOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Candidate not found.");
+        }
 
+        Condidats candidat = candidatOpt.get();
 
-       Optional<Condidats> candidatOpt = candidatsRepository.findById(answerRequests.get(0).getCandidatId());
-if (candidatOpt.isPresent()) {
-    Condidats candidat = candidatOpt.get();
+        for (AnswerRequest answerRequest : answerRequests) {
+            Question question = questionsMap.get(answerRequest.getQuestionId());
+            if (question != null) {
+                Answer answer = new Answer();
+                answer.setCandidat(candidat);
+                answer.setQuestion(question);
+                answer.setTexteReponse(answerRequest.getTexteReponse());
+                answer.setEstCorrecte(answerRequest.isEstCorrecte());
+                answerRepository.save(answer);
 
-    Score score = new Score();
-    score.setCandidat(candidat);
-    score.setTest(test);
-    score.setCorrectAnswers(correctAnswers);
-    score.setTotalQuestions(totalQuestions);
+                if (answerRequest.isEstCorrecte()) {
+                    correctAnswers++;
+                }
+            }
+        }
 
-    scoreRepository.save(score); // Save score using the repository
-}
+        Score score = new Score();
+        score.setCandidat(candidat);
+        score.setTest(test);
+        score.setCorrectAnswers(correctAnswers);
+        score.setTotalQuestions(totalQuestions);
 
+        scoreRepository.save(score);
 
         return ResponseEntity.ok("Test submitted successfully!");
     }
-
 
     public static class AnswerRequest {
         private Long questionId;

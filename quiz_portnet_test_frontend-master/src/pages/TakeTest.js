@@ -30,17 +30,26 @@ const TakeTest = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [started, setStarted] = useState(false);
+  const [candidatId, setCandidatId] = useState(null); // State for candidatId
 
   useEffect(() => {
-    // Fetch the questions for the test ID
-    fetch(`http://localhost:8088/api/tests/${id}/questions`)
-      .then(response => response.json())
-      .then(data => {
-        console.log('Fetched questions:', data); // Debug line
-        setQuestions(data);
-        setAnswers(new Array(data.length).fill(''));
-      })
-      .catch(error => console.error('Error fetching questions:', error));
+    // Fetch the candidate ID and questions for the test
+    const fetchCandidateData = async () => {
+      try {
+        const candidateResponse = await fetch('http://localhost:8088/api/candidates/current');
+        const candidateData = await candidateResponse.json();
+        setCandidatId(candidateData.id); // Assume this API returns the current candidate's ID
+
+        const questionsResponse = await fetch(`http://localhost:8088/api/tests/${id}/questions`);
+        const questionsData = await questionsResponse.json();
+        setQuestions(questionsData);
+        setAnswers(new Array(questionsData.length).fill(''));
+      } catch (error) {
+        console.error('Error fetching candidate data or questions:', error);
+      }
+    };
+
+    fetchCandidateData();
   }, [id]);
 
   const handleChange = (event) => {
@@ -63,39 +72,40 @@ const TakeTest = () => {
 
   const handleSubmit = () => {
     setOpenDialog(true);
-};
+  };
 
-const handleCloseDialog = (confirm) => {
+  const handleCloseDialog = (confirm) => {
     setOpenDialog(false);
-    if (confirm) {
-        setSubmitted(true);
+    if (confirm && candidatId !== null) {
+      setSubmitted(true);
 
-        const answerRequests = questions.map((question, index) => {
-            const selectedChoice = question.choices.find(choice => choice.choiceText === answers[index]);
-            return {
-                questionId: question.id,
-                candidatId: 1,  
-                texteReponse: answers[index],
-                estCorrecte: selectedChoice ? selectedChoice.isCorrect : false
-            };
-        });
+      const answerRequests = questions.map((question, index) => {
+        const selectedChoice = question.choices.find(choice => choice.choiceText === answers[index]);
+        return {
+          questionId: question.id,
+          candidatId: 1,  // Use the dynamically fetched candidate ID
+          texteReponse: answers[index],
+          estCorrecte: selectedChoice ? selectedChoice.isCorrect : false
+        };
+      });
 
-        fetch(`http://localhost:8088/api/tests/${id}/submit`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(answerRequests)
-        }).then(response => {
-            if (response.ok) {
-                alert('Test submitted successfully!');
-            } else {
-                alert('Failed to submit test.');
-            }
-        }).catch(error => console.error('Error submitting test:', error));
+      fetch(`http://localhost:8088/api/tests/${id}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(answerRequests),
+      })
+        .then(response => {
+          if (response.ok) {
+            alert('Test submitted successfully!');
+          } else {
+            alert('Failed to submit test.');
+          }
+        })
+        .catch(error => console.error('Error submitting test:', error));
     }
-};
-
+  };
 
   const handleStart = () => {
     setStarted(true);
